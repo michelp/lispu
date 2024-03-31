@@ -103,6 +103,7 @@ is similar to the use of vectors in APL.
 ```
 ? {0:red 1:green 2:blue}
 [red green blue]
+```
 
 ```
 {:5}
