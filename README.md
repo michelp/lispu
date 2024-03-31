@@ -29,11 +29,15 @@ question of what is meant by "same"; for now assume that a hillisp
 function `eql` determines sameness.  Here is an example of a xapping
 that maps symbols to other symbols:
 
+```
 {sky:blue apple:red grass:green}
+```
 
 The same xapping could have been written in this manner:
 
+```
 {apple:red sky:blue grass:green}
+```
 
 The order in which the pair, are written makes no difference.
 
@@ -55,24 +59,33 @@ array or hash table, where the indices may be any Hillisp objects.
 
 A xapping may be accessed by index to obtain a value:
 
-? (xref '{sky:blue apple:red grass:green} 'apple) ; => red
+```
+? (xref '{sky:blue apple:red grass:green} 'apple)
+red
+```
 
 Sometimes the index and the value of a pair are the same (that is,
 `eql`). As a convenient abbreviation, each a pair may be written
 within xapping-notation as just the value, without the index or the
 colon. For example,
 
+```
 ? {apple:fruit color:abstraction abstraction:abstraction}
 {apple:fruit color:abstraction abstraction}
+```
 
 This is most convenient in the case where all the pairs may be so
 abbreviated:
 
+```
 {red green blue}
+```
 
 means the same as:
 
+```
 {red:red green:green blue:blue}
+```
 
 but is considerably shorter. If all the elements of a xapping can be
 abbreviated in this manner, then the xapping is called a `xet` (rhymes
@@ -87,29 +100,26 @@ notation `[red green blue]` is merely an abbreviation for `{0:red
 called a xector (rhymes with "vector'). The use of xectors in Hillisp
 is similar to the use of vectors in APL.
 
-{0:red 1:green 2:blue} ; [red green blue]
+```
+? {0:red 1:green 2:blue}
+[red green blue]
 
+```
 {:5}
+```
 
+```
 {:}
+```
 
+```
 {sqrt}
+```
 
+```
 {pi:1.772453851 e:1.16487212 -1:i sqrt}
+```
 
-
-
-
-hillisp CUDA arrays are called "xectors" and can be operated on in
-[CUDA
-SIMT](https://en.wikipedia.org/wiki/Single_instruction,_multiple_threads)
-fashion using a parallel lisp syntax.  Inspirations for this syntax
-were described in [The Connection Machine (link to book on
-Amazon)](http://www.amazon.com/The-Connection-Machine-Artificial-Intelligence/dp/0262580977)
-by [Daniel Hillis](https://en.wikipedia.org/wiki/Danny_Hillis) and the
-paper [Connection Machine Lisp: fine-grained parallel symbolic
-processing](http://dl.acm.org/citation.cfm?id=319870) by Hillis and
-[Guy L. Steele, Jr.](https://en.wikipedia.org/wiki/Guy_L._Steele,_Jr.)
 
 ## install
 
