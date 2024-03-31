@@ -1,4 +1,4 @@
-CC_FLAGS := -arch=sm_30 -g -G
+CC_FLAGS := -arch=sm_53 -g -G
 
 SRC = $(shell find . -name *.cu)
 

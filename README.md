@@ -4,6 +4,102 @@
 [Connection
 Machines](https://en.wikipedia.org/wiki/Connection_Machine).
 
+Inspiration for Hillisp comes from the book [The Connection Machine
+](http://www.amazon.com/The-Connection-Machine-Artificial-Intelligence/dp/0262580977)
+by [Daniel Hillis](https://en.wikipedia.org/wiki/Danny_Hillis) and the
+paper [Connection Machine Lisp: fine-grained parallel symbolic
+processing](http://dl.acm.org/citation.cfm?id=319870) by Hillis and
+[Guy L. Steele, Jr.](https://en.wikipedia.org/wiki/Guy_L._Steele,_Jr.)
+
+All parallelism in hillisp is organized around a data structure called
+a *xapping* (rhymes with "mapping").  A xapping is something like an
+array and something like a hash table but all the entires in a xapping
+can be operated on in parallel, for example to perform associative
+searching. This data structure by itself is not a particularly
+original idea; the innovation in hillisp lies in the program notation
+used in conjunction with it.
+
+To be precite, a xapping is an unordered set of ordered pairs.  The
+first item of each pale is called an *index*, and the second item is
+called a *value*. We write a pair we write a pair as *index:value*. An
+index or value may be any Lisp object. A xapping cannot contain two
+distinct pairs whose indices are the same; all the indices in a
+xapping are distinct (but the values need not be distinct). There is a
+question of what is meant by "same"; for now assume that a hillisp
+function `eql` determines sameness.  Here is an example of a xapping
+that maps symbols to other symbols:
+
+{sky:blue apple:red grass:green}
+
+The same xapping could have been written in this manner:
+
+{apple:red sky:blue grass:green}
+
+The order in which the pair, are written makes no difference.
+
+To speak in terms of implementation on a parallel computer, one may
+think of an index as a label for a processor, and think of the
+corresponding value as being stored in the local memory of that
+processor. The index might or might not be stored explicitly also.
+
+The xapping shown above might be represented, for example, by storing
+pointers to the symbols `apple` and `red` in proceseor A, `sky` and
+`blue` in processor B, and `grass` and `green` in processor C.
+
+The ingenious reader can no doubt invent many other representations
+for xappings suitable for particular purposes. In any case, it is well
+to think of indices as labelling abstract processors, and to think of
+two values in two xappings, as being stored in the same processor if
+they have the same index, Semantically a xapping really is like an
+array or hash table, where the indices may be any Hillisp objects.
+
+A xapping may be accessed by index to obtain a value:
+
+? (xref '{sky:blue apple:red grass:green} 'apple) ; => red
+
+Sometimes the index and the value of a pair are the same (that is,
+`eql`). As a convenient abbreviation, each a pair may be written
+within xapping-notation as just the value, without the index or the
+colon. For example,
+
+? {apple:fruit color:abstraction abstraction:abstraction}
+{apple:fruit color:abstraction abstraction}
+
+This is most convenient in the case where all the pairs may be so
+abbreviated:
+
+{red green blue}
+
+means the same as:
+
+{red:red green:green blue:blue}
+
+but is considerably shorter. If all the elements of a xapping can be
+abbreviated in this manner, then the xapping is called a `xet` (rhymes
+with "set").
+
+If a finite xapping has a set of indices that are consecutive
+nonnagative integers beginning with zero, then the xapping may be
+abbreviated by writing the values in order according to their indices,
+separated by whitespace and surrounded by brackets.  For example, the
+notation `[red green blue]` is merely an abbreviation for `{0:red
+1:green 2:blue}`. A xapping that can be abbreviated in this manner is
+called a xector (rhymes with "vector'). The use of xectors in Hillisp
+is similar to the use of vectors in APL.
+
+{0:red 1:green 2:blue} ; [red green blue]
+
+{:5}
+
+{:}
+
+{sqrt}
+
+{pi:1.772453851 e:1.16487212 -1:i sqrt}
+
+
+
+
 hillisp CUDA arrays are called "xectors" and can be operated on in
 [CUDA
 SIMT](https://en.wikipedia.org/wiki/Single_instruction,_multiple_threads)
