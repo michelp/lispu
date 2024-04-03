@@ -60,10 +60,10 @@ x_any read_sexpr_tail(FILE *infile) {
     temp = read_sexpr_head(infile);
     return cons(temp, read_sexpr_tail(infile));
   }
-  if (token == x_env.lbrack) {
-    temp = read_xector(infile);
-    return cons(temp, read_sexpr_tail(infile));
-  }
+  /* if (token == x_env.lbrack) { */
+  /*   temp = read_xector(infile); */
+  /*   return cons(temp, read_sexpr_tail(infile)); */
+  /* } */
   if (token == x_env.dot)
     return read_cdr(infile);
   if (token == x_env.rparen)
@@ -83,10 +83,10 @@ x_any read_sexpr_head(FILE *infile) {
     temp = read_sexpr_head(infile);
     return cons(temp, read_sexpr_tail(infile));
   }
-  else if (token == x_env.lbrack) {
-    temp = read_xector(infile);
-    return cons(temp, read_sexpr_tail(infile));
-  }
+  /* else if (token == x_env.lbrack) { */
+  /*   temp = read_xector(infile); */
+  /*   return cons(temp, read_sexpr_tail(infile)); */
+  /* } */
   else if (token == x_env.rparen)
     return x_env.nil;
   else if (token == x_env.dot)
@@ -96,49 +96,49 @@ x_any read_sexpr_head(FILE *infile) {
   return x_env.nil;
 }
 
-x_any read_xector(FILE *infile) {
-  x_any val;
-  x_any cell;
-  x_any typ = NULL;
-  size_t size = 0;
+/* x_any read_xector(FILE *infile) { */
+/*   x_any val; */
+/*   x_any cell; */
+/*   x_any typ = NULL; */
+/*   size_t size = 0; */
 
-  cell = x_env.nil;
-  val = eval(read_sexpr(infile));
-  if (val == x_env.nil)
-    return cell;
-  typ = type(val);
-  if (typ == x_env.int_)
-      cell = new_ixector(X_XECTOR_BLOCK_SIZE);
-  else if (typ == x_env.double_)
-      cell = new_dxector(X_XECTOR_BLOCK_SIZE);
-  else
-    assert(0);
-  do {
-    if (typ == x_env.int_)
-      xector_set_car_ith(cell, size, ival(val));
-    else if (typ = x_env.double_)
-      xector_set_car_dth(cell, size, dval(val));
-    else
-      assert(0);
-    size++;
-    val = eval(read_sexpr(infile));
-    if (val == x_env.nil)
-      break;
-    if (type(val) != typ)
-      assert(0); // must all be same type
-  } while (1);
+/*   cell = x_env.nil; */
+/*   val = eval(read_sexpr(infile)); */
+/*   if (val == x_env.nil) */
+/*     return cell; */
+/*   typ = type(val); */
+/*   if (typ == x_env.int_) */
+/*       cell = new_ixector(X_XECTOR_BLOCK_SIZE); */
+/*   else if (typ == x_env.double_) */
+/*       cell = new_dxector(X_XECTOR_BLOCK_SIZE); */
+/*   else */
+/*     assert(0); */
+/*   do { */
+/*     if (typ == x_env.int_) */
+/*       xector_set_car_ith(cell, size, ival(val)); */
+/*     else if (typ = x_env.double_) */
+/*       xector_set_car_dth(cell, size, dval(val)); */
+/*     else */
+/*       assert(0); */
+/*     size++; */
+/*     val = eval(read_sexpr(infile)); */
+/*     if (val == x_env.nil) */
+/*       break; */
+/*     if (type(val) != typ) */
+/*       assert(0); // must all be same type */
+/*   } while (1); */
 
-  set_car(cell, new_int(size));
-  return cell;
-}
+/*   set_car(cell, new_int(size)); */
+/*   return cell; */
+/* } */
 
 x_any read_sexpr(FILE *infile) {
   x_any token;
   token = read_token(infile);
   if (is_symbol(token))
     return token;
-  if (token == x_env.lbrack)
-    return read_xector(infile);
+  /* if (token == x_env.lbrack) */
+  /*   return read_xector(infile); */
   if (token == x_env.lparen)
     return read_sexpr_head(infile);
   if (token == x_env.rparen)

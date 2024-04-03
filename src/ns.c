@@ -1,6 +1,6 @@
 #include "lisp.h"
 
-int inline hash(const char *name) {
+int hash(const char *name) {
   int value = 0;
   while (*name != '\0')
     value = (value * X_HASH_MULTIPLIER + *name++) % X_HASH_TABLE_SIZE;

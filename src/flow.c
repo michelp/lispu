@@ -1,5 +1,16 @@
 #include "lisp.h"
 
+void push_frame() {
+  x_env.frame_count += 1;
+  x_env.max_frame_count += 1;
+  for (int i = 0; i < X_HASH_TABLE_SIZE; i++)
+    current_frame_bucket(i) = x_env.nil;
+}
+
+void pop_frame() {
+  x_env.frame_count -= 1;
+}
+
 x_any x_if(x_any args) {
   x_any cond, body, result;
   cond = car(args);

@@ -48,12 +48,7 @@ void init(void) {
 
   x_env.int_ = intern("int");
   x_env.double_ = intern("double");
-  x_env.dcomplex = intern("dcomplex");
   x_env.str = intern("str");
-
-  x_env.ixector = intern("ixector");
-  x_env.dxector = intern("dxector");
-  x_env.dcxector = intern("dcxector");
 
   x_env.fn = intern("fn");
   x_env.special = intern("special");
@@ -77,8 +72,6 @@ void init(void) {
   def_fn("apply", (void*)x_apply);
   def_fn("assert", (void*)x_assert);
   def_fn("asserteq", (void*)x_asserteq);
-  def_fn("assertall", (void*)x_assertall);
-  def_fn("assertany", (void*)x_assertany);
   def_fn("print", (void*)x_print);
   def_fn("println", (void*)x_println);
   def_fn("printsp", (void*)x_printsp);
@@ -98,14 +91,9 @@ void init(void) {
   def_fn("<", (void*)x_lt);
   def_fn(">=", (void*)x_gte);
   def_fn("<=", (void*)x_lte);
-  def_fn("complex", (void*)x_complex);
   def_fn("not", (void*)x_not);
   def_fn("and", (void*)x_and);
-  def_fn("all", (void*)x_all);
-  def_fn("any", (void*)x_any_);
   def_fn("or", (void*)x_or);
-  def_fn("fill", (void*)x_fill);
-  def_fn("empty", (void*)x_empty);
   def_fn("time", (void*)x_time);
   def_fn("gc", (void*)x_gc);
   def_fn("dir", (void*)x_dir);
@@ -126,9 +114,8 @@ int main(int argc, const char* argv[]) {
   x_any expr;
   x_any value;
   FILE *fp;
-  cudaDeviceReset();
-  x_env.result = cudaStreamCreate(&x_env.stream);
 
+  GrB_init(GrB_NONBLOCKING);
   init();
   if (argc > 1) {
     for (int i = 1; i < argc; i++) {
@@ -164,8 +151,4 @@ int main(int argc, const char* argv[]) {
   }
   pop_frame();
   x_gc();
-  x_env.result = cudaStreamDestroy(x_env.stream);
-  CHECK;
-  cudaDeviceReset();
-  CHECK;
 }

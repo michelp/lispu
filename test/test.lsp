@@ -26,14 +26,11 @@
 (assert (> 10.0 -4.99))
 (assert (< -1.56 40.732))
 
-(asserteq (+ (complex 1.0 2.0) (complex 3.0 4.0)) (complex 4.0 6.0))
-
 (asserteq (len (1 2 3)) 3)
 (asserteq (len ()) 0)
 (asserteq (len nil) 0)
 (asserteq (len true) 0)
 (asserteq (len len) 0)
-(asserteq (len [1 2 3]) 3)
 
 (asserteq (and true true) true)
 (asserteq (and 1 true) true)

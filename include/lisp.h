@@ -8,11 +8,11 @@
 #include <assert.h>
 #include <inttypes.h>
 #include <stdint.h>
-#include <cuComplex.h>
+#include <stdbool.h>
+#include <suitesparse/GraphBLAS.h>
 
 #define X_YOUNG_CELL_POOL_SIZE (1024*64)
 #define X_OLD_CELL_POOL_SIZE (1024*512)
-#define X_XECTOR_BLOCK_SIZE (1024*1024)
 
 #define X_NUM_FRAMES 128
 #define X_HASH_TABLE_SIZE 269
@@ -22,7 +22,6 @@
 #define THREADSPERBLOCK 256
 #define BLOCKS 256
 
-#define CHECK check_cuda_errors(__FILE__, __LINE__)
 #define GDX gridDim.x
 #define BDX blockDim.x
 #define BIX blockIdx.x
@@ -33,14 +32,14 @@
 typedef struct x_cell x_cell, *x_any;
 typedef x_any (*x_fn)(x_any);
 
-struct __align__(16) x_cell {
+struct __attribute__((aligned(16))) x_cell {
   x_any car;
   x_any cdr;
   x_any type;
   void *value;
 };
 
-typedef struct __align__(16) x_cell_pool {
+typedef struct __attribute__((aligned(16))) x_cell_pool {
   x_cell cells[X_YOUNG_CELL_POOL_SIZE];
   x_any free;
   struct x_cell_pool *next;
@@ -51,9 +50,7 @@ typedef struct __align__(16) x_cell_pool {
 #define current_frame_bucket(h) (x_env.frames[x_env.frame_count][h])
 #define get_frame_bucket(i, h) (x_env.frames[i][h])
 
-typedef struct __align__(16) x_environ {
-  cudaStream_t stream;
-  cudaError_t result;
+typedef struct  __attribute__((aligned(16))) x_environ {
   int debugLevel;
 
   x_any symbol;
@@ -74,11 +71,7 @@ typedef struct __align__(16) x_environ {
   x_any pair;
   x_any int_;
   x_any double_;
-  x_any dcomplex;
   x_any str;
-  x_any ixector;
-  x_any dxector;
-  x_any dcxector;
   x_any fn;
   x_any special;
 
@@ -103,7 +96,6 @@ extern __thread x_environ x_env;
 #define val(x) ((x)->value)
 #define ival(x) ((int64_t)val(x))
 #define dval(x) (*((double*)val(x)))
-#define cval(c) (*((cuDoubleComplex*)val(c)))
 #define crval(c) (cval(c).x)
 #define cival(c) (cval(c).y)
 #define sval(x) ((char*)val(x))
@@ -115,51 +107,27 @@ extern __thread x_environ x_env;
 
 #define set_val(x, y) ((x->value) = (void*)(y))
 
-template <typename T> inline T* cars(x_any x) { return (T*)(xval(x)); }
-
-#define xector_size(x) (ival(car(x)))
-
-#define xector_car_ith(x, i) (cars<int64_t>((x))[(i)])
-
-#define xector_car_dth(x, i) (cars<double>((x))[(i)])
-
-#define xector_car_dcth(x, i) (cars<cuDoubleComplex>((x))[(i)])
-
-#define xector_set_car_ith(x, i, y) (cars<int64_t>((x))[(i)]) = (int64_t)(y)
-#define xector_set_car_dth(x, i, y) (cars<double>((x))[(i)]) = (double)(y)
-
 #define is_symbol(x) (type(x) == x_env.symbol)
 #define is_token(x) (type(x) == x_env.token)
 #define is_user(x) (type(x) == x_env.user)
 #define is_pair(x) (type(x) == x_env.pair)
 #define is_binding(x) (type(x) == x_env.binding)
-#define is_ixector(x) (type(x) == x_env.ixector)
-#define is_dxector(x) (type(x) == x_env.dxector)
-#define is_dcxector(x) (type(x) == x_env.dcxector)
-#define is_xector(x) (is_ixector(x) || is_dxector(x) || is_dxector(x) || is_dcxector(x))
+
 #define is_int(x) (type(x) == x_env.int_)
 #define is_double(x) (type(x) == x_env.double_)
-#define is_dcomplex(x) (type(x) == x_env.dcomplex)
 #define is_str(x) (type(x) == x_env.str)
 
 #define are_symbols(x, y) (is_symbol(x) && is_symbol(y))
 #define are_pairs(x, y) (is_pair(x) && is_pair(y))
-#define are_xectors(x, y) (is_xector(x) && is_xector(y))
-#define are_ixectors(x, y) (is_ixector(x) && is_ixector(y))
-#define are_dxectors(x, y) (is_dxector(x) && is_dxector(y))
-#define are_dcxectors(x, y) (is_dcxector(x) && is_dcxector(y))
 #define are_ints(x, y) (is_int(x) && is_int(y))
 #define are_doubles(x, y) (is_double(x) && is_double(y))
-#define are_dcomplex(x, y) (is_dcomplex(x) && is_dcomplex(y))
 #define are_strs(x, y) (is_str(x) && is_str(y))
 
 #define is_fn(x) (type(x) == x_env.fn)
 #define is_special(x) (type(x) == x_env.special)
-#define is_atom(x) (is_fn((x)) || is_special(x) || is_user(x) || is_int(x) || is_xector(x))
+#define is_atom(x) (is_fn((x)) || is_special(x) || is_user(x) || is_int(x))
 #define are_atoms(x, y) (is_atom(x) && is_atom(y))
 #define is_func(x) (is_fn((x)) || is_user((x)) || is_special(x))
-
-#define assert_xectors_align(x, y) assert(xector_size(x) == xector_size(y))
 
 // REPL functions
 
@@ -168,10 +136,6 @@ char* new_name(const char*);
 x_any new_cell(const char*, x_any);
 x_any new_int(int64_t);
 x_any new_double(double);
-x_any new_dcomplex(cuDoubleComplex);
-x_any new_ixector(size_t);
-x_any new_dxector(size_t);
-x_any new_dcxector(size_t);
 
 x_cell_pool* new_cell_pool(x_cell_pool*);
 x_any def_token(const char*);
@@ -179,7 +143,7 @@ int hash(const char*);
 x_any lookup(const char*, int);
 x_any create_symbol(const char*);
 char* x_str(x_any);
-void inline print_el(FILE*, x_any, int);
+void print_el(FILE*, x_any, int);
 void print_list(x_any, FILE*);
 void print_cell(x_any, FILE*);
 void print_list(x_any, FILE*);
@@ -193,7 +157,6 @@ x_any eval_list(x_any);
 x_any intern(const char*);
 x_any def_fn(const char*, void*);
 x_any read_token(FILE*);
-x_any read_xector(FILE*);
 x_any read_sexpr(FILE*);
 x_any read_cdr(FILE*);
 x_any read_sexpr_head(FILE*);
@@ -224,8 +187,6 @@ x_any x_type(x_any);
 x_any x_len(x_any);
 x_any x_range(x_any);
 x_any x_set(x_any);
-x_any x_fill(x_any);
-x_any x_empty(x_any);
 x_any x_dir();
 
 // special
@@ -234,6 +195,9 @@ x_any x_quote(x_any);
 x_any x_def(x_any);
 
 // flow
+
+void push_frame();
+void pop_frame();
 
 x_any x_if(x_any);
 x_any x_while(x_any);
@@ -263,8 +227,6 @@ x_any _x_fma(x_any, x_any, x_any, bool);
 x_any x_fma(x_any);
 x_any x_fmaass(x_any);
 
-x_any x_complex(x_any);
-
 // cmp
 
 x_any x_eq(x_any);
@@ -279,52 +241,10 @@ x_any x_lte(x_any);
 x_any x_not(x_any);
 x_any x_and(x_any);
 x_any x_or(x_any);
-x_any x_all(x_any);
-x_any x_any_(x_any);
-
-// xector
-
-x_any x_zeros(x_any);
-x_any x_ones(x_any);
 
 // sys
 
 x_any x_gc();
 x_any x_time();
 
-template<typename T> __global__ void xd_add(const T* __restrict__, const T* __restrict__, T* __restrict__, const size_t);
-template<typename T> __global__ void xd_sub(const T* __restrict__, const T* __restrict__, T* __restrict__, const size_t);
-template<typename T> __global__ void xd_mul(const T* __restrict__, const T* __restrict__, T* __restrict__, const size_t);
-template<typename T> __global__ void xd_div(const T* __restrict__, const T* __restrict__, T* __restrict__, const size_t);
-template<typename T> __global__ void xd_fma(const T* __restrict__, const T* __restrict__, T* __restrict__, const size_t);
-template<typename T> __global__ void xd_saxpy(const T* __restrict__, const T* __restrict__, T* __restrict__, const size_t);
-
-template<typename T> __global__ void xd_eq(const T* __restrict__, const T* __restrict__, int64_t* __restrict__, const size_t);
-template<typename T> __global__ void xd_all(const T* __restrict__, int* __restrict__, const size_t);
-template<typename T> __global__ void xd_any(const T* __restrict__, int* __restrict__, const size_t);
-template<typename T> __global__ void xd_fill(T* __restrict__, const T, const size_t);
-
 #define TWO_ARG(a, b) (cons(a, cons(b, x_env.nil)))
-#define SYNC cudaThreadSynchronize()
-#define SYNCS(s) cudaStreamSynchronize(s)
-
-inline void check_cuda_errors(const char *filename, const int line_number)
-{
-  cudaError_t error = cudaGetLastError();
-  if(error != cudaSuccess)
-  {
-    printf("CUDA error at %s:%i: %s\n", filename, line_number, cudaGetErrorString(error));
-    exit(-1);
-  }
-}
-
-void inline push_frame() {
-  x_env.frame_count += 1;
-  x_env.max_frame_count += 1;
-  for (int i = 0; i < X_HASH_TABLE_SIZE; i++)
-    current_frame_bucket(i) = x_env.nil;
-}
-
-void inline pop_frame() {
-  x_env.frame_count -= 1;
-}

@@ -1,36 +1,6 @@
 #include <sys/time.h>
 #include "lisp.h"
 
-template<typename T>
-__global__ void
- xd_fill(T* __restrict__ cars, const T val, const size_t size) {
-  int i = TID;
-  while (i < size) {
-    cars[i] = val;
-    i += STRIDE;
-  }
-}
-
-template<typename T>
-__global__ void
- xd_all(const T* __restrict__ cell, int* __restrict__ result, const size_t size) {
-  for (int i = TID; i < size; i += STRIDE)
-    if (*result == size)
-      if (!cell[i])
-        atomicSub(result, 1);
-  __syncthreads();
-}
-
-template<typename T>
-__global__ void
- xd_any(const T* __restrict__ cell, int* __restrict__ result, const size_t size) {
-  for (int i = TID; i < size; i += STRIDE)
-    if (*result == 0)
-      if (cell[i])
-        atomicAdd(result, 1);
-  __syncthreads();
-}
-
 x_any x_is(x_any args) {
   if (car(args) == cadr(args))
     return x_env.true_;
@@ -65,16 +35,6 @@ x_any x_asserteq(x_any args) {
   return x_env.true_;
 }
 
-x_any x_assertall(x_any args) {
-  assert(x_all(args) != x_env.nil);
-  return x_env.true_;
-}
-
-x_any x_assertany(x_any args) {
-  assert(x_any(args) != x_env.nil);
-  return x_env.true_;
-}
-
 x_any x_car(x_any args) {
   x_any cell;
   cell = car(args);
@@ -89,7 +49,7 @@ x_any x_cdr(x_any args) {
   return cdr(cell);
 }
 
-x_any inline cons(x_any a, x_any b) {
+x_any cons(x_any a, x_any b) {
   x_any cell;
   cell = new_cell(NULL, x_env.pair);
   set_car(cell, a);
@@ -213,85 +173,6 @@ x_any x_or(x_any args) {
   return x_env.nil;
 }
 
-x_any x_fill(x_any args) {
-  x_any value, size, cell;
-  value = car(args);
-  size = cadr(args);
-  if (!is_int(size))
-    assert(0);
-  if (is_int(value)) {
-    cell = new_ixector(ival(size));
-    xd_fill<int64_t><<<BLOCKS, THREADSPERBLOCK, 0, x_env.stream>>>
-      (cars<int64_t>(cell), ival(value), xector_size(cell));
-  }
-  else if (is_double(value)) {
-    cell = new_dxector(ival(size));
-    xd_fill<double><<<BLOCKS, THREADSPERBLOCK, 0, x_env.stream>>>
-      (cars<double>(cell), dval(value), xector_size(cell));
-  }
-  else if (is_dcomplex(value)) {
-    cell = new_dcxector(ival(size));
-    xd_fill<cuDoubleComplex><<<BLOCKS, THREADSPERBLOCK, 0, x_env.stream>>>
-      (cars<cuDoubleComplex>(cell), cval(value), xector_size(cell));
-  }
-  CHECK;
-  return cell;
-}
-
-x_any x_empty(x_any args) {
-  x_any type, size, cell;
-  type = car(args);
-  size = cadr(args);
-  if (!is_int(size))
-    assert(0);
-  if (type == x_env.int_) {
-    cell = new_ixector(ival(size));
-  }
-  else if (type == x_env.double_) {
-    cell = new_dxector(ival(size));
-  }
-  CHECK;
-  return cell;
-}
-
-x_any x_all(x_any args) {
-  int* result;
-  x_any cell;
-  cell = car(args);
-  if (!is_xector(cell))
-    assert(0);
-  SYNCS(x_env.stream);
-  cudaMallocManaged(&result, sizeof(int));
-  assert(result != NULL);
-  *result = xector_size(cell);
-  xd_all<int64_t><<<BLOCKS, THREADSPERBLOCK, 0, x_env.stream>>>
-    (cars<int64_t>(cell), result, xector_size(cell));
-  SYNCS(x_env.stream);
-  CHECK;
-  if (*result != xector_size(cell))
-    return x_env.nil;
-  return x_env.true_;
-}
-
-x_any x_any_(x_any args) {
-  int* result;
-  x_any cell;
-  cell = car(args);
-  if (!is_xector(cell))
-    assert(0);
-  SYNCS(x_env.stream);
-  cudaMallocManaged(&result, sizeof(int));
-  assert(result != NULL);
-  *result = 0;
-  xd_any<int64_t><<<BLOCKS, THREADSPERBLOCK, 0, x_env.stream>>>
-    (cars<int64_t>(cell), result, xector_size(cell));
-  SYNCS(x_env.stream);
-  CHECK;
-  if (*result > 0)
-    return x_env.true_;
-  return x_env.nil;
-}
-
 x_any x_time() {
   struct timeval tv;
   gettimeofday(&tv, NULL);
@@ -302,17 +183,12 @@ x_any x_set(x_any args) {
   return bind(sval(car(args)), eval(cadr(args)));
 }
 
-int64_t inline length(x_any cell) {
+int64_t length(x_any cell) {
   int64_t length = 0;
-  if (is_xector(cell))
-    return xector_size(cell);
-  else if (cdr(cell) == NULL)
-    return 0;
-  else
-    do {
-      length += 1;
-      cell = cdr(cell);
-    } while(cell != x_env.nil);
+  while(cell != x_env.nil) {
+    length += 1;
+    cell = cdr(cell);
+  }
   return length;
 }
 

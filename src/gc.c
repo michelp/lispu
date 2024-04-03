@@ -21,7 +21,7 @@ x_any x_gc() {
       do
          *(int64_t*)&cdr(cell) |= 1;
       while (--cell >= cell_pool->cells);
-   } while (cell_pool = cell_pool->next);
+   } while ((cell_pool = cell_pool->next));
 
   mark(x_env.dot);
   mark(x_env.lparen);
@@ -37,17 +37,16 @@ x_any x_gc() {
   x_env.max_frame_count = x_env.frame_count;
 
    cell_pool = x_env.cell_pools;
-   SYNCS(x_env.stream);
    do {
      cell = cell_pool->cells + X_YOUNG_CELL_POOL_SIZE-1;
      do
        if ((int64_t)(cell->cdr) & 1) {
-         if (is_xector(cell)) {
-           if (xval(cell) != NULL) {
-             cudaFree(xval(cell));
-             CHECK;
-           }
-         }
+         // if (is_xector(cell)) {
+         //   if (xval(cell) != NULL) {
+         //     cudaFree(xval(cell));
+         //     CHECK;
+         //   }
+         // }
          cell->type = NULL;
          cell->value = NULL;
          cell->car = NULL;
@@ -55,7 +54,7 @@ x_any x_gc() {
          freed++;
        }
      while (--cell >= cell_pool->cells);
-   } while (cell_pool = cell_pool->next);
+   } while ((cell_pool = cell_pool->next));
    return new_int(freed);
 }
 
@@ -68,15 +67,6 @@ x_any c_alloc(x_any type) {
   set_car(cell, NULL);
   set_type(cell, type);
   return cell;
-}
-
-void* x_alloc(size_t size) {
-  void* result;
-  cudaMallocManaged(&result, size);
-  assert(result != NULL);
-  cudaStreamAttachMemAsync(x_env.stream, result);
-  CHECK;
-  return result;
 }
 
 char* new_name(const char* name) {
@@ -111,44 +101,6 @@ x_any new_double(double value) {
   assert(v != NULL);
   *v = value;
   set_val(cell, v);
-  return cell;
-}
-
-x_any new_dcomplex(cuDoubleComplex value) {
-  x_any cell;
-  cuDoubleComplex *v;
-  cell = new_cell(NULL, x_env.dcomplex);
-  v = (cuDoubleComplex*)malloc(sizeof(cuDoubleComplex));
-  assert(v != NULL);
-  *v = value;
-  set_val(cell, v);
-  return cell;
-}
-
-x_any new_ixector(size_t size) {
-  x_any cell, csize;
-  cell = new_cell(NULL, x_env.ixector);
-  csize = new_int(size);
-  set_car(cell, csize);
-  set_val(cell, x_alloc(size * sizeof(int64_t)));
-  return cell;
-}
-
-x_any new_dxector(size_t size) {
-  x_any cell, csize;
-  cell = new_cell(NULL, x_env.dxector);
-  csize = new_int(size);
-  set_car(cell, csize);
-  set_val(cell, x_alloc(size * sizeof(double)));
-  return cell;
-}
-
-x_any new_dcxector(size_t size) {
-  x_any cell, csize;
-  cell = new_cell(NULL, x_env.dcxector);
-  csize = new_int(size);
-  set_car(cell, csize);
-  set_val(cell, x_alloc(size * sizeof(cuDoubleComplex)));
   return cell;
 }
 

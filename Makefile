@@ -1,20 +1,24 @@
-CC_FLAGS := -arch=sm_30 -g -G
+CC = gcc
+CFLAGS = -Wall -Wextra -g -Iinclude -I/usr/local/include
+LIBS = -lgraphblas
 
-SRC = $(shell find . -name *.cu)
 
-OBJ = $(SRC:%.cu=%.o)
+SRCDIR = src
+OUTDIR = bin
 
-BIN = lisp
 
-all: $(BIN)
+SOURCES = $(wildcard $(SRCDIR)/*.c)
+OBJECTS = $(SOURCES:$(SRCDIR)/%.c=$(OUTDIR)/%.o)
 
-$(BIN): $(OBJ)
-	nvcc $(CC_FLAGS) $(OBJ) -o lisp
-%.o: %.cu
-	nvcc -x cu $(CC_FLAGS) -Iinclude -dc $< -o $@
+PROGRAM = lisp
+
+all: $(PROGRAM)
+
+$(PROGRAM): $(OBJECTS)
+	$(CC) $(CFLAGS) $(OBJECTS) $(LIBS) -o $@
+
+$(OBJECTS): $(OUTDIR)/%.o : $(SRCDIR)/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f src/*.o lisp
-
-check: all
-	./lisp test/test.lsp
+	rm -f $(OUTDIR)/*.o $(PROGRAM)
