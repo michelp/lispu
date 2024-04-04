@@ -38,14 +38,14 @@ x_any x_asserteq(x_any args) {
 x_any x_car(x_any args) {
   x_any cell;
   cell = car(args);
-  assert(is_pair(cell) || is_user(cell));
+  assert(is_pair(cell) || is_def(cell));
   return car(cell);
 }
 
 x_any x_cdr(x_any args) {
   x_any cell;
   cell = car(args);
-  assert(is_pair(cell) || is_user(cell));
+  assert(is_pair(cell) || is_def(cell));
   return cdr(cell);
 }
 
@@ -76,7 +76,7 @@ x_any x_apply(x_any args) {
   if (is_fn(cell))
     return ((x_fn)val(cell))(fargs);
 
-  else if (is_user(cell) || is_pair(cell)) {
+  else if (is_pair(cell) || is_def(cell)) {
     expr = car(cell);
     assert(length(fargs) == length(expr));
     push_frame();

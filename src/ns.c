@@ -86,7 +86,7 @@ x_any x_def(x_any args) {
   x_any name;
   name = car(args);
   assert(is_symbol(name));
-  set_type(name, x_env.user);
+  set_type(name, x_env.def);
   set_car(name, car(cdr(args)));
   set_cdr(name, cdr(cdr(args)));
   local(sval(name), name);

@@ -15,7 +15,7 @@ void print_cell(x_any cell, FILE *outfile) {
     fprintf(outfile, "<%s at %p>", sval(type(cell)), (void*)val(cell));
   else if (is_binding(cell))
     fprintf(outfile, "%s", sval(cell));
-  else if (is_user(cell)) {
+  else if (is_def(cell)) {
     putc('(', outfile);
     print_list(cell, outfile);
   }

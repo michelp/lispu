@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <suitesparse/GraphBLAS.h>
+#include <gc/gc.h>
 
 #define X_YOUNG_CELL_POOL_SIZE (1024*64)
 #define X_OLD_CELL_POOL_SIZE (1024*512)
@@ -17,7 +18,7 @@
 #define X_NUM_FRAMES 128
 #define X_HASH_TABLE_SIZE 269
 #define X_HASH_MULTIPLIER 131
-#define X_MAX_NAME_LEN 128
+#define X_MAX_TOKEN_LEN 2048
 
 #define THREADSPERBLOCK 256
 #define BLOCKS 256
@@ -67,7 +68,7 @@ typedef struct  __attribute__((aligned(16))) x_environ {
   x_any eof;
   x_any builtin;
   x_any token;
-  x_any user;
+  x_any def;
   x_any pair;
   x_any int_;
   x_any double_;
@@ -108,8 +109,7 @@ extern __thread x_environ x_env;
 #define set_val(x, y) ((x->value) = (void*)(y))
 
 #define is_symbol(x) (type(x) == x_env.symbol)
-#define is_token(x) (type(x) == x_env.token)
-#define is_user(x) (type(x) == x_env.user)
+#define is_def(x) (type(x) == x_env.def)
 #define is_pair(x) (type(x) == x_env.pair)
 #define is_binding(x) (type(x) == x_env.binding)
 
@@ -125,9 +125,9 @@ extern __thread x_environ x_env;
 
 #define is_fn(x) (type(x) == x_env.fn)
 #define is_special(x) (type(x) == x_env.special)
-#define is_atom(x) (is_fn((x)) || is_special(x) || is_user(x) || is_int(x))
+#define is_atom(x) (is_fn((x)) || is_special(x) || is_def(x) || is_int(x))
 #define are_atoms(x, y) (is_atom(x) && is_atom(y))
-#define is_func(x) (is_fn((x)) || is_user((x)) || is_special(x))
+#define is_func(x) (is_fn((x)) || is_def((x)) || is_special(x))
 
 // REPL functions
 

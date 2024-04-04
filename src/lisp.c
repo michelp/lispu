@@ -43,7 +43,7 @@ void init(void) {
 
   x_env.token = intern("token");
   x_env.builtin = intern("builtin");
-  x_env.user = intern("user");
+  x_env.def = intern("def");
   x_env.true_ = intern("true");
 
   x_env.int_ = intern("int");
@@ -95,7 +95,6 @@ void init(void) {
   def_fn("and", (void*)x_and);
   def_fn("or", (void*)x_or);
   def_fn("time", (void*)x_time);
-  def_fn("gc", (void*)x_gc);
   def_fn("dir", (void*)x_dir);
   def_fn("len", (void*)x_len);
   def_fn("range", (void*)x_range);
@@ -131,7 +130,6 @@ int main(int argc, const char* argv[]) {
           if (expr == x_env.eof)
             break;
           value = eval(expr);
-          x_gc();
         }
       }
     }
@@ -146,9 +144,7 @@ int main(int argc, const char* argv[]) {
       printf(": ");
       print_cell(value, stdout);
       putchar('\n');
-      x_gc();
     }
   }
   pop_frame();
-  x_gc();
 }
